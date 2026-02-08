@@ -1,11 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Animated,
-} from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { VoiceState } from '@/types';
 
@@ -14,11 +8,10 @@ interface MicButtonProps {
   onPressIn: () => void;
   onPressOut: () => void;
   disabled?: boolean;
-  isAudioPlaying?: boolean;
 }
 
 // Line-style microphone icon
-function MicrophoneIcon({ color = Colors.white }: { color?: string }) {
+function MicrophoneIcon({ color = Colors.text }: { color?: string }) {
   return (
     <View style={styles.micIconContainer}>
       {/* Mic body */}
@@ -33,342 +26,99 @@ function MicrophoneIcon({ color = Colors.white }: { color?: string }) {
   );
 }
 
-// Line-style speaker icon for loading state
-function SpeakerIcon() {
-  return (
-    <View style={styles.speakerIconContainer}>
-      <View style={styles.speakerBody} />
-      <View style={styles.speakerCone} />
-      <View style={[styles.soundWave, styles.soundWave1]} />
-      <View style={[styles.soundWave, styles.soundWave2]} />
-    </View>
-  );
-}
-
-function BouncingDots() {
-  const dot1Y = useRef(new Animated.Value(0)).current;
-  const dot2Y = useRef(new Animated.Value(0)).current;
-  const dot3Y = useRef(new Animated.Value(0)).current;
-  const fadeIn = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    // Fade in dots
-    Animated.timing(fadeIn, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-
-    const animateDot = (dot: Animated.Value, delay: number) => {
-      return Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(dot, {
-            toValue: -16,
-            duration: 250,
-            useNativeDriver: true,
-          }),
-          Animated.timing(dot, {
-            toValue: 0,
-            duration: 250,
-            useNativeDriver: true,
-          }),
-          Animated.delay(450 - delay),
-        ])
-      );
-    };
-
-    const anim1 = animateDot(dot1Y, 0);
-    const anim2 = animateDot(dot2Y, 150);
-    const anim3 = animateDot(dot3Y, 300);
-
-    anim1.start();
-    anim2.start();
-    anim3.start();
-
-    return () => {
-      anim1.stop();
-      anim2.stop();
-      anim3.stop();
-    };
-  }, [dot1Y, dot2Y, dot3Y, fadeIn]);
-
-  return (
-    <Animated.View style={[styles.bouncingDotsContainer, { opacity: fadeIn }]}>
-      <Animated.View
-        style={[styles.bouncingDot, { transform: [{ translateY: dot1Y }] }]}
-      />
-      <Animated.View
-        style={[styles.bouncingDot, { transform: [{ translateY: dot2Y }] }]}
-      />
-      <Animated.View
-        style={[styles.bouncingDot, { transform: [{ translateY: dot3Y }] }]}
-      />
-    </Animated.View>
-  );
-}
-
-function AudioWaveBars() {
-  const bar1 = useRef(new Animated.Value(0.4)).current;
-  const bar2 = useRef(new Animated.Value(0.7)).current;
-  const bar3 = useRef(new Animated.Value(0.5)).current;
-  const bar4 = useRef(new Animated.Value(0.8)).current;
-  const bar5 = useRef(new Animated.Value(0.6)).current;
-
-  useEffect(() => {
-    const animateBar = (bar: Animated.Value, minVal: number, maxVal: number, duration: number) => {
-      return Animated.loop(
-        Animated.sequence([
-          Animated.timing(bar, {
-            toValue: maxVal,
-            duration: duration,
-            useNativeDriver: true,
-          }),
-          Animated.timing(bar, {
-            toValue: minVal,
-            duration: duration,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-    };
-
-    const animations = [
-      animateBar(bar1, 0.3, 1, 300),
-      animateBar(bar2, 0.4, 0.9, 250),
-      animateBar(bar3, 0.2, 1, 350),
-      animateBar(bar4, 0.5, 0.8, 200),
-      animateBar(bar5, 0.3, 0.95, 280),
-    ];
-
-    animations.forEach(anim => anim.start());
-
-    return () => animations.forEach(anim => anim.stop());
-  }, [bar1, bar2, bar3, bar4, bar5]);
-
-  const bars = [bar1, bar2, bar3, bar4, bar5];
-
-  return (
-    <View style={styles.waveBarsContainer}>
-      {bars.map((bar, index) => (
-        <Animated.View
-          key={index}
-          style={[
-            styles.waveBar,
-            {
-              transform: [{ scaleY: bar }],
-            },
-          ]}
-        />
-      ))}
-    </View>
-  );
-}
-
 export function MicButton({
   voiceState,
   onPressIn,
   onPressOut,
   disabled = false,
-  isAudioPlaying = false,
 }: MicButtonProps) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const morphAnim = useRef(new Animated.Value(1)).current;
-  const prevVoiceState = useRef<VoiceState>(voiceState);
+  const thinkingPulse = useRef(new Animated.Value(1)).current;
 
-  // Handle morphing animation when transitioning to/from thinking state
   useEffect(() => {
-    const wasThinking = prevVoiceState.current === 'thinking';
-    const isThinking = voiceState === 'thinking';
-
-    if (!wasThinking && isThinking) {
-      // Entering thinking state - shrink to 70%
-      Animated.spring(morphAnim, {
-        toValue: 0.7,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 8,
-      }).start();
-    } else if (wasThinking && !isThinking) {
-      // Exiting thinking state - grow back to 100%
-      Animated.spring(morphAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 8,
-      }).start();
+    if (voiceState === 'thinking') {
+      const pulseLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(thinkingPulse, {
+            toValue: 0.55,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+          Animated.timing(thinkingPulse, {
+            toValue: 1,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseLoop.start();
+      return () => pulseLoop.stop();
     }
-
-    prevVoiceState.current = voiceState;
-  }, [voiceState, morphAnim]);
-
-  // Handle pulse animations based on state
-  useEffect(() => {
-    if (voiceState === 'idle') {
-      // More noticeable idle pulse animation (5% growth)
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.05,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulse.start();
-      return () => pulse.stop();
-    } else if (voiceState === 'recording') {
-      // More pronounced pulse for recording
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.08,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulse.start();
-      return () => pulse.stop();
-    } else if (voiceState === 'speaking') {
-      // Gentle pulse for speaking
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.03,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulse.start();
-      return () => pulse.stop();
-    } else if (voiceState === 'thinking') {
-      // Subtle pulse for thinking
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.02,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulse.start();
-      return () => pulse.stop();
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [voiceState, pulseAnim]);
-
+    thinkingPulse.setValue(1);
+  }, [voiceState, thinkingPulse]);
   const handlePressIn = () => {
     if (disabled || voiceState !== 'idle') return;
-
-    Animated.spring(scaleAnim, {
-      toValue: 0.92,
-      useNativeDriver: true,
-      tension: 100,
-      friction: 10,
-    }).start();
     onPressIn();
   };
 
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 100,
-      friction: 10,
-    }).start();
-
     if (voiceState === 'recording') {
       onPressOut();
     }
   };
 
-  const renderContent = () => {
+  const getLabel = () => {
     switch (voiceState) {
       case 'recording':
-        return <MicrophoneIcon />;
+        return 'Recording…';
       case 'thinking':
-        return <BouncingDots />;
+        return 'Thinking…';
       case 'speaking':
-        return isAudioPlaying ? <AudioWaveBars /> : <SpeakerIcon />;
+        return 'Speaking…';
       case 'error':
-        return <Text style={styles.icon}>⚠️</Text>;
+        return 'Try again';
       default:
-        return <MicrophoneIcon />;
-    }
-  };
-
-  const getStatusText = () => {
-    switch (voiceState) {
-      case 'recording':
-        return 'Release to send';
-      case 'thinking':
-        return 'Sophie is thinking...';
-      case 'speaking':
-        return isAudioPlaying ? 'Sophie is speaking...' : 'Loading audio...';
-      case 'error':
-        return 'Something went wrong';
-      default:
-        return 'Hold to talk to Sophie';
+        return 'Hold to talk';
     }
   };
 
   const isInteractive = voiceState === 'idle' || voiceState === 'recording';
-
-  // Combine all scale animations
-  const combinedScale = Animated.multiply(
-    Animated.multiply(scaleAnim, pulseAnim),
-    morphAnim
-  );
+  const isIdle = voiceState === 'idle';
+  const isRecording = voiceState === 'recording';
+  const showPill = voiceState === 'idle' || voiceState === 'recording';
+  const isSecondaryLabel =
+    voiceState === 'thinking' || voiceState === 'speaking';
 
   return (
     <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.buttonWrapper,
-          {
-            transform: [{ scale: combinedScale }],
-          },
-        ]}
-      >
-        <Pressable
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          disabled={!isInteractive || disabled}
+      {showPill ? (
+        <View style={styles.pillWrap}>
+          {isRecording && <View style={styles.recordingGlow} />}
+          <Pressable
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            disabled={!isInteractive || disabled}
+            style={({ pressed }) => [
+              styles.pill,
+              !isIdle && styles.pillActive,
+              !isInteractive && styles.pillDisabled,
+              pressed && styles.pillPressed,
+            ]}
+          >
+            <MicrophoneIcon color={Colors.text} />
+            <Text style={styles.pillText}>{getLabel()}</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Animated.Text
           style={[
-            styles.button,
-            voiceState === 'recording' && styles.buttonRecording,
-            !isInteractive && styles.buttonDisabled,
+            styles.stateLabel,
+            isSecondaryLabel && styles.stateLabelSecondary,
+            { opacity: thinkingPulse },
           ]}
         >
-          {renderContent()}
-        </Pressable>
-      </Animated.View>
-      <Text style={styles.statusText}>{getStatusText()}</Text>
+          {getLabel()}
+        </Animated.Text>
+      )}
     </View>
   );
 }
@@ -378,148 +128,96 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
   },
-  buttonWrapper: {
-    shadowColor: 'rgba(0,0,0,0.2)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  button: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: Colors.micButton,
-    justifyContent: 'center',
+  pillWrap: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  buttonRecording: {
-    backgroundColor: Colors.error,
+  recordingGlow: {
+    position: 'absolute',
+    width: 220,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(92,225,230,0.25)',
+    shadowColor: 'rgba(92,225,230,0.9)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 24,
   },
-  buttonDisabled: {
-    opacity: 0.8,
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
   },
-  icon: {
-    fontSize: 64,
+  pillActive: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
-  statusText: {
-    marginTop: 20,
-    fontSize: 15,
-    fontWeight: '500',
+  pillPressed: {
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    shadowColor: 'rgba(92,225,230,0.45)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 1,
+    shadowRadius: 20,
+  },
+  pillDisabled: {
+    opacity: 0.6,
+  },
+  pillText: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  stateLabel: {
+    fontSize: 18,
+    color: Colors.text,
+    letterSpacing: 0.2,
+  },
+  stateLabelSecondary: {
+    fontWeight: '400',
     color: Colors.textSecondary,
   },
   // Microphone icon styles
   micIconContainer: {
-    width: 64,
-    height: 64,
+    width: 18,
+    height: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   micHead: {
-    width: 28,
-    height: 36,
-    borderWidth: 3,
-    borderRadius: 14,
+    width: 8,
+    height: 12,
+    borderWidth: 1.5,
+    borderRadius: 6,
     position: 'absolute',
     top: 0,
   },
   micBody: {
-    width: 42,
-    height: 24,
-    borderWidth: 3,
+    width: 12,
+    height: 8,
+    borderWidth: 1.5,
     borderTopWidth: 0,
-    borderBottomLeftRadius: 21,
-    borderBottomRightRadius: 21,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
     position: 'absolute',
-    top: 26,
+    top: 10,
   },
   micStand: {
-    width: 3,
-    height: 10,
-    backgroundColor: Colors.white,
-    position: 'absolute',
-    bottom: 6,
-  },
-  micBase: {
-    width: 24,
-    height: 3,
-    borderRadius: 2,
+    width: 1.5,
+    height: 4,
+    backgroundColor: Colors.text,
     position: 'absolute',
     bottom: 3,
   },
-  // Speaker icon styles (for loading state)
-  speakerIconContainer: {
-    width: 64,
-    height: 64,
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  speakerBody: {
-    position: 'absolute',
-    left: 12,
-    top: 22,
-    width: 12,
-    height: 20,
-    backgroundColor: Colors.white,
+  micBase: {
+    width: 10,
+    height: 1.5,
     borderRadius: 2,
-  },
-  speakerCone: {
     position: 'absolute',
-    left: 20,
-    top: 16,
-    width: 0,
-    height: 0,
-    borderTopWidth: 16,
-    borderBottomWidth: 16,
-    borderLeftWidth: 16,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderLeftColor: Colors.white,
-  },
-  soundWave: {
-    position: 'absolute',
-    borderWidth: 3,
-    borderColor: Colors.white,
-    borderLeftColor: 'transparent',
-    borderRadius: 20,
-  },
-  soundWave1: {
-    left: 38,
-    top: 20,
-    width: 12,
-    height: 24,
-  },
-  soundWave2: {
-    left: 46,
-    top: 14,
-    width: 12,
-    height: 36,
-  },
-  bouncingDotsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    height: 48,
-  },
-  bouncingDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: Colors.white,
-  },
-  waveBarsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 64,
-  },
-  waveBar: {
-    width: 8,
-    height: 48,
-    backgroundColor: Colors.white,
-    borderRadius: 4,
+    bottom: 1,
   },
 });

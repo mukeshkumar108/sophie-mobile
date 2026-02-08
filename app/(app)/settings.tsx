@@ -56,6 +56,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.backgroundGlow} />
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
@@ -108,14 +109,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  backgroundGlow: {
+    position: 'absolute',
+    top: -80,
+    right: -120,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(92,225,230,0.08)',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   backButton: {
     padding: 8,
@@ -125,7 +133,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: Colors.text,
   },
@@ -148,9 +156,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   sectionContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surfaceAlt,
     borderRadius: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   row: {
     flexDirection: 'row',

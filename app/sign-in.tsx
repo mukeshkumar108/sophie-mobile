@@ -35,7 +35,7 @@ export default function SignInScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.icon}>👋</Text>
+        <Text style={styles.icon}>◦</Text>
         <Text style={styles.title}>Welcome to Sophie</Text>
         <Text style={styles.subtitle}>
           Your AI accountability partner who won't let you bullshit yourself
@@ -71,52 +71,56 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   icon: {
-    fontSize: 64,
-    marginBottom: 24,
+    fontSize: 48,
+    marginBottom: 20,
+    color: Colors.accent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '600',
     color: Colors.text,
     marginBottom: 12,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
     paddingHorizontal: 16,
   },
   buttonContainer: {
     gap: 12,
   },
   appleButton: {
-    backgroundColor: Colors.text,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  appleButtonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  googleButton: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surfaceAlt,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  appleButtonText: {
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  googleButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
   googleButtonText: {
     color: Colors.text,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   terms: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textSecondary,
     textAlign: 'center',
     marginTop: 32,

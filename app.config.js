@@ -7,7 +7,7 @@ export default {
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "sophiemobile",
-    userInterfaceStyle: "light",
+    userInterfaceStyle: "dark",
     newArchEnabled: true,
     ios: {
       supportsTablet: false,

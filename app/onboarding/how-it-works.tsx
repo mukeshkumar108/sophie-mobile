@@ -13,7 +13,7 @@ export default function OnboardingHowItWorks() {
 
         <View style={styles.micIllustration}>
           <View style={styles.micCircle}>
-            <Text style={styles.micIcon}>🎤</Text>
+            <Text style={styles.micIcon}>◦</Text>
           </View>
         </View>
 
@@ -69,8 +69,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '600',
     color: Colors.text,
     marginBottom: 40,
     textAlign: 'center',
@@ -82,16 +82,19 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: Colors.micButton,
+    backgroundColor: Colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: 'rgba(92,225,230,0.25)',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
   },
   micIcon: {
-    fontSize: 56,
+    fontSize: 48,
+    color: Colors.accent,
   },
   instructions: {
     gap: 20,
@@ -106,22 +109,24 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.text,
+    backgroundColor: Colors.surfaceAlt,
     color: Colors.white,
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
     lineHeight: 32,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   stepText: {
-    fontSize: 18,
+    fontSize: 16,
     color: Colors.text,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
   },
   footer: {
     gap: 24,
@@ -142,14 +147,16 @@ const styles = StyleSheet.create({
     width: 24,
   },
   button: {
-    backgroundColor: Colors.micButton,
+    backgroundColor: Colors.surfaceAlt,
     paddingVertical: 18,
     borderRadius: 14,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   buttonText: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

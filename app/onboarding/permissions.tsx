@@ -28,7 +28,7 @@ export default function OnboardingPermissions() {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.icon}>🎙️</Text>
+        <Text style={styles.icon}>◦</Text>
         <Text style={styles.title}>Sophie needs your mic</Text>
         <Text style={styles.subtitle}>
           To talk to you via voice, Sophie needs microphone access. Your
@@ -65,21 +65,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   icon: {
-    fontSize: 80,
-    marginBottom: 32,
+    fontSize: 60,
+    marginBottom: 28,
+    color: Colors.accent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '600',
     color: Colors.text,
     marginBottom: 16,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 15,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 22,
     paddingHorizontal: 16,
   },
   footer: {
@@ -101,14 +102,16 @@ const styles = StyleSheet.create({
     width: 24,
   },
   button: {
-    backgroundColor: Colors.micButton,
+    backgroundColor: Colors.surfaceAlt,
     paddingVertical: 18,
     borderRadius: 14,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   buttonText: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

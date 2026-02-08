@@ -1,9 +1,8 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   SafeAreaView,
   Share,
@@ -12,16 +11,17 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { Colors } from '@/constants/colors';
 import { MicButton } from '@/components/mic-button';
-import { MessageBubble } from '@/components/message-bubble';
 import { ErrorModal } from '@/components/error-modal';
 import { useVoice } from '@/hooks/use-voice';
 import { useConversationContext } from '@/contexts/conversation-context';
+import { TranscriptModal } from '@/components/transcript-modal';
+import { AuroraBackground } from '@/components/aurora-background';
 
 export default function MainScreen() {
   const router = useRouter();
   const { getToken, signOut } = useAuth();
-  const scrollViewRef = useRef<ScrollView>(null);
-  const { messages, latestAssistantMessageId, addUserMessage, addAssistantMessage, clearMessages } =
+  const [isTranscriptVisible, setIsTranscriptVisible] = useState(false);
+  const { messages, addUserMessage, addAssistantMessage, clearMessages } =
     useConversationContext();
 
   const handleTranscript = useCallback(
@@ -40,11 +40,9 @@ export default function MainScreen() {
 
   const {
     voiceState,
-    isAudioPlaying,
     error,
     startRecording,
     stopRecording,
-    replayAudio,
     clearError,
   } = useVoice({
     onTranscript: handleTranscript,
@@ -52,77 +50,44 @@ export default function MainScreen() {
     getToken,
   });
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
-  }, [messages.length]);
-
   const handleSignOut = async () => {
     clearMessages();
     await signOut();
   };
 
-  const handleCopyText = useCallback(async (text: string) => {
+  const handleExportTranscript = useCallback(async () => {
+    if (messages.length === 0) return;
+    const transcript = messages
+      .map((message) => `${message.role === 'user' ? 'You' : 'Sophie'}: ${message.content}`)
+      .join('\n\n');
     try {
-      await Share.share({ message: text });
-    } catch (error) {
-      // Silently fail - toast already shown in MessageBubble
-    }
-  }, []);
+      await Share.share({ message: transcript });
+    } catch (error) {}
+  }, [messages]);
 
   return (
     <SafeAreaView style={styles.container}>
+      <AuroraBackground voiceState={voiceState} />
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarEmoji}>💬</Text>
-          </View>
-          <Text style={styles.headerTitle}>Sophie</Text>
-        </View>
+        <Text style={styles.headerTitle}>Sophie</Text>
         <Pressable
-          onPress={() => router.push('/(app)/settings')}
-          style={styles.settingsButton}
+          onPress={() => setIsTranscriptVisible(true)}
+          style={styles.headerButton}
         >
-          <Text style={styles.settingsIcon}>⚙️</Text>
+          <Text style={styles.headerButtonText}>Transcript</Text>
         </Pressable>
       </View>
 
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {messages.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>👋</Text>
-            <Text style={styles.emptyTitle}>Hey there!</Text>
-            <Text style={styles.emptySubtitle}>
-              Hold the button below to start talking to Sophie
-            </Text>
-          </View>
-        )}
-        {messages.map((message) => (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            onReplayAudio={replayAudio}
-            onCopyText={handleCopyText}
-            isNew={message.id === latestAssistantMessageId}
-          />
-        ))}
-      </ScrollView>
-
-      <MicButton
-        voiceState={voiceState}
-        isAudioPlaying={isAudioPlaying}
-        onPressIn={startRecording}
-        onPressOut={stopRecording}
-      />
+      <View style={styles.footer}>
+        <MicButton
+          voiceState={voiceState}
+          onPressIn={startRecording}
+          onPressOut={stopRecording}
+        />
+        <Pressable onPress={() => router.push('/(app)/settings')} style={styles.settingsButton}>
+          <Text style={styles.settingsText}>Settings</Text>
+        </Pressable>
+      </View>
 
       <ErrorModal
         visible={voiceState === 'error'}
@@ -130,6 +95,13 @@ export default function MainScreen() {
         onDismiss={clearError}
         onRetry={clearError}
         onSignIn={handleSignOut}
+      />
+
+      <TranscriptModal
+        visible={isTranscriptVisible}
+        messages={messages}
+        onClose={() => setIsTranscriptVisible(false)}
+        onExport={handleExportTranscript}
       />
     </SafeAreaView>
   );
@@ -144,68 +116,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.sophieBubble,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarEmoji: {
-    fontSize: 18,
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-  },
-  settingsButton: {
-    padding: 8,
-  },
-  settingsIcon: {
     fontSize: 20,
-    opacity: 0.6,
-  },
-  messagesContainer: {
-    flex: 1,
-  },
-  messagesContent: {
-    paddingVertical: 16,
-    flexGrow: 1,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 80,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 24,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 8,
+    letterSpacing: 0.4,
   },
-  emptySubtitle: {
-    fontSize: 16,
+  headerButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: Colors.surfaceAlt,
+  },
+  headerButtonText: {
     color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  footer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 48,
+  },
+  settingsButton: {
+    marginTop: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+  },
+  settingsText: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    letterSpacing: 0.3,
   },
 });

@@ -88,12 +88,14 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modal: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 24,
     width: '100%',
     maxWidth: 320,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   icon: {
     fontSize: 48,
@@ -112,7 +114,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   requestIdContainer: {
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.surfaceAlt,
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
@@ -133,13 +135,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryButton: {
-    backgroundColor: Colors.micButton,
+    backgroundColor: Colors.surfaceAlt,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   primaryButtonText: {
-    color: Colors.white,
+    color: Colors.text,
     fontSize: 16,
     fontWeight: '600',
   },

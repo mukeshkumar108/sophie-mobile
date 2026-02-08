@@ -64,7 +64,7 @@ export default function RootLayout() {
         <OnboardingProvider>
           <InitialLayout />
         </OnboardingProvider>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
       </ClerkLoaded>
     </ClerkProvider>
   );

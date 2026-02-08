@@ -1,20 +1,20 @@
 import React, { useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { Colors } from '@/constants/colors';
 import { MicButton } from '@/components/mic-button';
-import { MessageBubble } from '@/components/message-bubble';
 import { ErrorModal } from '@/components/error-modal';
 import { useVoice } from '@/hooks/use-voice';
 import { useConversation } from '@/hooks/use-conversation';
 import { useOnboarding } from '@/hooks/use-onboarding';
+import { AuroraBackground } from '@/components/aurora-background';
 
 export default function OnboardingFirstConversation() {
   const router = useRouter();
   const { getToken } = useAuth();
   const { completeOnboarding } = useOnboarding();
-  const { messages, latestAssistantMessageId, addUserMessage, addAssistantMessage } = useConversation();
+  const { messages, addUserMessage, addAssistantMessage } = useConversation();
 
   const handleTranscript = useCallback(
     (transcript: string) => {
@@ -35,11 +35,9 @@ export default function OnboardingFirstConversation() {
 
   const {
     voiceState,
-    isAudioPlaying,
     error,
     startRecording,
     stopRecording,
-    replayAudio,
     clearError,
   } = useVoice({
     onTranscript: handleTranscript,
@@ -64,27 +62,14 @@ export default function OnboardingFirstConversation() {
 
   return (
     <View style={styles.container}>
+      <AuroraBackground voiceState={voiceState} />
       <View style={styles.header}>
         <Text style={styles.title}>Try talking to Sophie</Text>
         <Text style={styles.subtitle}>
-          Hold the button and say:{'\n'}"Hey Sophie, I want to start walking
-          every morning at 7am"
+          Hold to speak a commitment. Example:{'\n'}
+          “I want to start walking every morning at 7am.”
         </Text>
       </View>
-
-      <ScrollView
-        style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
-      >
-        {messages.map((message) => (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            onReplayAudio={replayAudio}
-            isNew={message.id === latestAssistantMessageId}
-          />
-        ))}
-      </ScrollView>
 
       <View style={styles.footer}>
         <View style={styles.progressContainer}>
@@ -96,7 +81,6 @@ export default function OnboardingFirstConversation() {
 
         <MicButton
           voiceState={voiceState}
-          isAudioPlaying={isAudioPlaying}
           onPressIn={startRecording}
           onPressOut={stopRecording}
         />
@@ -118,33 +102,30 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: 80,
+    paddingTop: 72,
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 12,
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '600',
     color: Colors.text,
     marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
-  },
-  messagesContainer: {
-    flex: 1,
-  },
-  messagesContent: {
-    paddingVertical: 16,
+    lineHeight: 22,
   },
   footer: {
     paddingBottom: 48,
     gap: 16,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flex: 1,
   },
   progressContainer: {
     flexDirection: 'row',
