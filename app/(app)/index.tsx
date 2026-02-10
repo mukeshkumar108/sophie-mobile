@@ -55,6 +55,10 @@ export default function MainScreen() {
     await signOut();
   };
 
+  const handlePressOut = useCallback(() => {
+    stopRecording();
+  }, [stopRecording]);
+
   const handleExportTranscript = useCallback(async () => {
     if (messages.length === 0) return;
     const transcript = messages
@@ -82,7 +86,7 @@ export default function MainScreen() {
         <MicButton
           voiceState={voiceState}
           onPressIn={startRecording}
-          onPressOut={stopRecording}
+          onPressOut={handlePressOut}
         />
         <Pressable onPress={() => router.push('/(app)/settings')} style={styles.settingsButton}>
           <Text style={styles.settingsText}>Settings</Text>

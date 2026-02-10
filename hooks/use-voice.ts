@@ -1,6 +1,10 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import * as Haptics from 'expo-haptics';
+import {
+  activateKeepAwakeAsync,
+  deactivateKeepAwake,
+} from 'expo-keep-awake';
 import { VoiceState, ErrorState, ChatResponse } from '@/types';
 import { sendAudioToSophie, ApiError } from '@/services/api';
 import { Config } from '@/constants/config';
@@ -29,6 +33,17 @@ export function useVoice({
   const maxRecordingTimeout = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+
+  useEffect(() => {
+    if (voiceState !== 'idle' && voiceState !== 'error') {
+      void activateKeepAwakeAsync('sophie-voice');
+    } else {
+      deactivateKeepAwake('sophie-voice');
+    }
+    return () => {
+      deactivateKeepAwake('sophie-voice');
+    };
+  }, [voiceState]);
 
   const requestPermission = useCallback(async () => {
     try {

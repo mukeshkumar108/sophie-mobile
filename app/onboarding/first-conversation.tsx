@@ -45,6 +45,10 @@ export default function OnboardingFirstConversation() {
     getToken,
   });
 
+  const handlePressOut = useCallback(() => {
+    stopRecording();
+  }, [stopRecording]);
+
   // Navigate to main app after successful conversation and audio finishes
   useEffect(() => {
     if (messages.length >= 2 && voiceState === 'idle') {
@@ -82,7 +86,7 @@ export default function OnboardingFirstConversation() {
         <MicButton
           voiceState={voiceState}
           onPressIn={startRecording}
-          onPressOut={stopRecording}
+          onPressOut={handlePressOut}
         />
       </View>
 
