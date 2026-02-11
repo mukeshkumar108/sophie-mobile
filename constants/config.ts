@@ -17,7 +17,7 @@ export const Config = {
 
   // Recording limits
   MIN_RECORDING_DURATION_MS: 500,
-  MAX_RECORDING_DURATION_MS: 60000,
+  MAX_RECORDING_DURATION_MS: 90000,
 
   // Conversation limits
   MAX_MESSAGES_TO_DISPLAY: 10,

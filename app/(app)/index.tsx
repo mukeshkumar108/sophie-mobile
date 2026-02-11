@@ -16,6 +16,7 @@ import { useVoice } from '@/hooks/use-voice';
 import { useConversationContext } from '@/contexts/conversation-context';
 import { TranscriptModal } from '@/components/transcript-modal';
 import { AuroraBackground } from '@/components/aurora-background';
+import { RecordingWarningOverlay } from '@/components/recording-warning-overlay';
 
 export default function MainScreen() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function MainScreen() {
     startRecording,
     stopRecording,
     clearError,
+    recordingRemainingMs,
   } = useVoice({
     onTranscript: handleTranscript,
     onResponse: handleResponse,
@@ -72,6 +74,7 @@ export default function MainScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <AuroraBackground voiceState={voiceState} />
+      <RecordingWarningOverlay remainingMs={recordingRemainingMs} />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Sophie</Text>
         <Pressable

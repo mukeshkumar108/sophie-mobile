@@ -9,6 +9,7 @@ import { useVoice } from '@/hooks/use-voice';
 import { useConversation } from '@/hooks/use-conversation';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { AuroraBackground } from '@/components/aurora-background';
+import { RecordingWarningOverlay } from '@/components/recording-warning-overlay';
 
 export default function OnboardingFirstConversation() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function OnboardingFirstConversation() {
     startRecording,
     stopRecording,
     clearError,
+    recordingRemainingMs,
   } = useVoice({
     onTranscript: handleTranscript,
     onResponse: handleResponse,
@@ -67,6 +69,7 @@ export default function OnboardingFirstConversation() {
   return (
     <View style={styles.container}>
       <AuroraBackground voiceState={voiceState} />
+      <RecordingWarningOverlay remainingMs={recordingRemainingMs} />
       <View style={styles.header}>
         <Text style={styles.title}>Try talking to Sophie</Text>
         <Text style={styles.subtitle}>

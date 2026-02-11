@@ -28,6 +28,7 @@ You can start developing by editing the files inside the **app** directory. This
 ## Notes
 
 - The app keeps the screen awake during voice interactions (recording/thinking/speaking) using `expo-keep-awake` to prevent iOS from sleeping mid-conversation.
+- Recording warnings: a red glow appears at 12s remaining and intensifies/pulses at 5s, with haptic feedback.
 
 ## Get a fresh project
 

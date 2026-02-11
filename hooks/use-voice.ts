@@ -26,6 +26,9 @@ export function useVoice({
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(
     null
   );
+  const [recordingRemainingMs, setRecordingRemainingMs] = useState<number | null>(
+    null
+  );
 
   const recordingRef = useRef<Audio.Recording | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
@@ -33,6 +36,9 @@ export function useVoice({
   const maxRecordingTimeout = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+  const recordingInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const warnedTwelve = useRef(false);
+  const warnedFive = useRef(false);
 
   useEffect(() => {
     if (voiceState !== 'idle' && voiceState !== 'error') {
@@ -111,6 +117,29 @@ export function useVoice({
       maxRecordingTimeout.current = setTimeout(() => {
         stopRecording();
       }, Config.MAX_RECORDING_DURATION_MS);
+
+      // Track remaining time for UI warnings
+      setRecordingRemainingMs(Config.MAX_RECORDING_DURATION_MS);
+      warnedTwelve.current = false;
+      warnedFive.current = false;
+      recordingInterval.current = setInterval(() => {
+        const elapsed = Date.now() - recordingStartTime.current;
+        const remaining = Math.max(
+          Config.MAX_RECORDING_DURATION_MS - elapsed,
+          0
+        );
+        setRecordingRemainingMs(remaining);
+        if (remaining <= 12000 && !warnedTwelve.current) {
+          warnedTwelve.current = true;
+          void Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Warning
+          );
+        }
+        if (remaining <= 5000 && !warnedFive.current) {
+          warnedFive.current = true;
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        }
+      }, 250);
     } catch (err) {
       console.error('Error starting recording:', err);
       setError({
@@ -127,6 +156,13 @@ export function useVoice({
       clearTimeout(maxRecordingTimeout.current);
       maxRecordingTimeout.current = null;
     }
+    if (recordingInterval.current) {
+      clearInterval(recordingInterval.current);
+      recordingInterval.current = null;
+    }
+    setRecordingRemainingMs(null);
+    warnedTwelve.current = false;
+    warnedFive.current = false;
 
     if (!recordingRef.current) {
       return;
@@ -281,6 +317,11 @@ export function useVoice({
     if (maxRecordingTimeout.current) {
       clearTimeout(maxRecordingTimeout.current);
     }
+    if (recordingInterval.current) {
+      clearInterval(recordingInterval.current);
+    }
+    warnedTwelve.current = false;
+    warnedFive.current = false;
     if (recordingRef.current) {
       try {
         await recordingRef.current.stopAndUnloadAsync();
@@ -306,5 +347,6 @@ export function useVoice({
     stopAudio,
     clearError,
     cleanup,
+    recordingRemainingMs,
   };
 }
