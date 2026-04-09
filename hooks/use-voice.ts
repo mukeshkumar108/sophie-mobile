@@ -18,7 +18,7 @@ const FILLER_CLIPS = [
   'https://aaui72motzuyoyiw.public.blob.vercel-storage.com/static/voice/filler-one-moment-Qdh2jl24VCBUk1GzBhQWkBaYNd3tFs.mp3',
 ];
 
-const FILLER_THRESHOLD_MS = 1500;
+const FILLER_THRESHOLD_MS = 4000;
 
 function randomFiller() {
   return FILLER_CLIPS[Math.floor(Math.random() * FILLER_CLIPS.length)];
