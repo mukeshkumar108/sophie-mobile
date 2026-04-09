@@ -1,6 +1,21 @@
 import { Config } from '@/constants/config';
 import { ChatResponse, ChatError } from '@/types';
 
+export async function closeSession(token: string): Promise<void> {
+  const response = await fetch(`${Config.API_BASE_URL}/api/session/close`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ personaId: Config.PERSONA_ID }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error((data as any).error || 'Failed to close session');
+  }
+}
+
 export class ApiError extends Error {
   requestId: string;
   statusCode: number;

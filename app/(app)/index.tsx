@@ -17,6 +17,7 @@ import { useConversationContext } from '@/contexts/conversation-context';
 import { TranscriptModal } from '@/components/transcript-modal';
 import { AuroraBackground } from '@/components/aurora-background';
 import { RecordingWarningOverlay } from '@/components/recording-warning-overlay';
+import { closeSession } from '@/services/api';
 
 export default function MainScreen() {
   const router = useRouter();
@@ -58,6 +59,16 @@ export default function MainScreen() {
     await signOut();
   };
 
+  const handleEndSession = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (token) await closeSession(token);
+      clearMessages();
+    } catch (err) {
+      console.warn('[end-session] failed', err);
+    }
+  }, [getToken, clearMessages]);
+
   const handlePressOut = useCallback(() => {
     stopRecording();
   }, [stopRecording]);
@@ -92,9 +103,14 @@ export default function MainScreen() {
           onPressIn={startRecording}
           onPressOut={handlePressOut}
         />
-        <Pressable onPress={() => router.push('/(app)/settings')} style={styles.settingsButton}>
-          <Text style={styles.settingsText}>Settings</Text>
-        </Pressable>
+        <View style={styles.footerLinks}>
+          <Pressable onPress={handleEndSession} style={styles.footerLinkButton}>
+            <Text style={styles.footerLinkText}>End session</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push('/(app)/settings')} style={styles.footerLinkButton}>
+            <Text style={styles.footerLinkText}>Settings</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ErrorModal
@@ -152,13 +168,17 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingBottom: 48,
   },
-  settingsButton: {
+  footerLinks: {
+    flexDirection: 'row',
+    gap: 16,
     marginTop: 6,
+  },
+  footerLinkButton: {
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 16,
   },
-  settingsText: {
+  footerLinkText: {
     color: Colors.textSecondary,
     fontSize: 13,
     letterSpacing: 0.3,
