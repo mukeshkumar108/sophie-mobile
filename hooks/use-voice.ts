@@ -243,9 +243,6 @@ export function useVoice({
 
       setVoiceState('thinking');
 
-      // Start filler timer — plays a short clip if response takes > 1.5s
-      startFillerTimer();
-
       const token = await getToken();
       if (!token) {
         await stopFillerAudio();
@@ -263,17 +260,12 @@ export function useVoice({
         hasAudioBase64: Boolean(response.audioBase64),
       });
 
-      // Stop filler before playing real response
-      await stopFillerAudio();
-
       onTranscript(response.transcript);
       onResponse(response.response, response.audioUrl);
 
       await playAudioBase64(response.audioBase64);
     } catch (err) {
       console.error('Error processing recording:', err);
-      await stopFillerAudio();
-
       if (err instanceof ApiError) {
         setError({
           message: err.message,
