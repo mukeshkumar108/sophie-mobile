@@ -25,8 +25,8 @@ export default function OnboardingFirstConversation() {
   );
 
   const handleResponse = useCallback(
-    async (response: string, audioUrl: string) => {
-      addAssistantMessage(response, audioUrl);
+    async (response: string, audioUrl: string | null) => {
+      addAssistantMessage(response, audioUrl ?? undefined);
       // Mark onboarding as complete after first successful conversation
       await completeOnboarding();
       console.log('[onboarding] completeOnboarding called after response');
@@ -36,6 +36,7 @@ export default function OnboardingFirstConversation() {
 
   const {
     voiceState,
+    isAudioPlaying,
     error,
     startRecording,
     stopRecording,
@@ -68,7 +69,7 @@ export default function OnboardingFirstConversation() {
 
   return (
     <View style={styles.container}>
-      <AuroraBackground voiceState={voiceState} />
+      <AuroraBackground voiceState={voiceState} isAudioPlaying={isAudioPlaying} />
       <RecordingWarningOverlay remainingMs={recordingRemainingMs} />
       <View style={styles.header}>
         <Text style={styles.title}>Try talking to Sophie</Text>

@@ -11,7 +11,9 @@ export interface Message {
 export interface ChatResponse {
   transcript: string;
   response: string;
-  audioUrl: string;
+  audioUrl: string | null;
+  audioBase64: string;
+  fillerClips?: Record<string, string>;
   timing: {
     stt_ms: number;
     llm_ms: number;

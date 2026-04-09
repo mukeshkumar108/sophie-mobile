@@ -9,9 +9,24 @@ import { VoiceState, ErrorState, ChatResponse } from '@/types';
 import { sendAudioToSophie, ApiError } from '@/services/api';
 import { Config } from '@/constants/config';
 
+// Pre-recorded filler clips — play after 1.5s of thinking to mask tool-call latency
+const FILLER_CLIPS = [
+  'https://aaui72motzuyoyiw.public.blob.vercel-storage.com/static/voice/filler-thinking-FSPFoHBHVubL2RDhF7XWQ0ckse0HdX.mp3',
+  'https://aaui72motzuyoyiw.public.blob.vercel-storage.com/static/voice/filler-one-sec-AL13a0J0XfKZhXhj7QvswCOkv1XtbT.mp3',
+  'https://aaui72motzuyoyiw.public.blob.vercel-storage.com/static/voice/filler-let-me-think-7Xc6h30D5fkOduIsPr4P04dpVf2loy.mp3',
+  'https://aaui72motzuyoyiw.public.blob.vercel-storage.com/static/voice/filler-yeah-wo1QWFUhLGlrslE5NSv8hV1e71fUUo.mp3',
+  'https://aaui72motzuyoyiw.public.blob.vercel-storage.com/static/voice/filler-one-moment-Qdh2jl24VCBUk1GzBhQWkBaYNd3tFs.mp3',
+];
+
+const FILLER_THRESHOLD_MS = 1500;
+
+function randomFiller() {
+  return FILLER_CLIPS[Math.floor(Math.random() * FILLER_CLIPS.length)];
+}
+
 interface UseVoiceOptions {
   onTranscript: (transcript: string) => void;
-  onResponse: (response: string, audioUrl: string) => void;
+  onResponse: (response: string, audioUrl: string | null) => void;
   getToken: () => Promise<string | null>;
 }
 
@@ -32,6 +47,8 @@ export function useVoice({
 
   const recordingRef = useRef<Audio.Recording | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
+  const fillerSoundRef = useRef<Audio.Sound | null>(null);
+  const fillerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordingStartTime = useRef<number>(0);
   const maxRecordingTimeout = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -76,9 +93,42 @@ export function useVoice({
     }
   }, []);
 
+  const stopFillerAudio = useCallback(async () => {
+    if (fillerTimerRef.current) {
+      clearTimeout(fillerTimerRef.current);
+      fillerTimerRef.current = null;
+    }
+    if (fillerSoundRef.current) {
+      try {
+        await fillerSoundRef.current.stopAsync();
+        await fillerSoundRef.current.unloadAsync();
+      } catch {}
+      fillerSoundRef.current = null;
+    }
+  }, []);
+
+  const startFillerTimer = useCallback(() => {
+    if (fillerTimerRef.current) clearTimeout(fillerTimerRef.current);
+    fillerTimerRef.current = setTimeout(async () => {
+      fillerTimerRef.current = null;
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+        });
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: randomFiller() },
+          { shouldPlay: true }
+        );
+        fillerSoundRef.current = sound;
+      } catch (err) {
+        console.warn('[use-voice] filler playback failed', err);
+      }
+    }, FILLER_THRESHOLD_MS);
+  }, []);
+
   const startRecording = useCallback(async () => {
     try {
-      // Check permission first
       const hasPermission = await checkPermission();
       if (!hasPermission) {
         const granted = await requestPermission();
@@ -92,13 +142,11 @@ export function useVoice({
         }
       }
 
-      // Configure audio mode
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
 
-      // Create and start recording
       const recording = new Audio.Recording();
       await recording.prepareToRecordAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
@@ -110,15 +158,12 @@ export function useVoice({
       setVoiceState('recording');
       setError(null);
 
-      // Haptic feedback
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      // Set max recording timeout
       maxRecordingTimeout.current = setTimeout(() => {
         stopRecording();
       }, Config.MAX_RECORDING_DURATION_MS);
 
-      // Track remaining time for UI warnings
       setRecordingRemainingMs(Config.MAX_RECORDING_DURATION_MS);
       warnedTwelve.current = false;
       warnedFive.current = false;
@@ -151,7 +196,6 @@ export function useVoice({
   }, [checkPermission, requestPermission]);
 
   const stopRecording = useCallback(async () => {
-    // Clear max recording timeout
     if (maxRecordingTimeout.current) {
       clearTimeout(maxRecordingTimeout.current);
       maxRecordingTimeout.current = null;
@@ -169,12 +213,10 @@ export function useVoice({
     }
 
     try {
-      // Haptic feedback
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
       const recordingDuration = Date.now() - recordingStartTime.current;
 
-      // Check if recording is too short
       if (recordingDuration < Config.MIN_RECORDING_DURATION_MS) {
         await recordingRef.current.stopAndUnloadAsync();
         recordingRef.current = null;
@@ -186,7 +228,6 @@ export function useVoice({
         return;
       }
 
-      // Stop recording
       await recordingRef.current.stopAndUnloadAsync();
       const uri = recordingRef.current.getURI();
       recordingRef.current = null;
@@ -200,11 +241,14 @@ export function useVoice({
         return;
       }
 
-      // Send to API
       setVoiceState('thinking');
+
+      // Start filler timer — plays a short clip if response takes > 1.5s
+      startFillerTimer();
 
       const token = await getToken();
       if (!token) {
+        await stopFillerAudio();
         setError({
           message: 'Please sign in again',
           requestId: 'no-token',
@@ -216,17 +260,19 @@ export function useVoice({
       const response: ChatResponse = await sendAudioToSophie(uri, token);
       console.log('[use-voice] response received', {
         hasTranscript: Boolean(response.transcript),
-        hasAudioUrl: Boolean(response.audioUrl),
+        hasAudioBase64: Boolean(response.audioBase64),
       });
 
-      // Add messages to conversation
+      // Stop filler before playing real response
+      await stopFillerAudio();
+
       onTranscript(response.transcript);
       onResponse(response.response, response.audioUrl);
 
-      // Play Sophie's audio response
-      await playAudio(response.audioUrl);
+      await playAudioBase64(response.audioBase64);
     } catch (err) {
       console.error('Error processing recording:', err);
+      await stopFillerAudio();
 
       if (err instanceof ApiError) {
         setError({
@@ -241,15 +287,13 @@ export function useVoice({
       }
       setVoiceState('error');
     }
-  }, [getToken, onTranscript, onResponse]);
+  }, [getToken, onTranscript, onResponse, startFillerTimer, stopFillerAudio]);
 
   const onPlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
     if (status.isLoaded) {
-      // Track when audio is actually playing
       if (status.isPlaying && !status.didJustFinish) {
         setIsAudioPlaying(true);
       }
-
       if (status.didJustFinish) {
         console.log('[use-voice] playback finished', {
           positionMillis: status.positionMillis,
@@ -261,24 +305,50 @@ export function useVoice({
     }
   }, []);
 
-  const playAudio = useCallback(async (audioUrl: string) => {
+  const playAudioBase64 = useCallback(async (base64: string) => {
     try {
-      console.log('[use-voice] playAudio start', { audioUrl });
       setVoiceState('speaking');
-      setIsAudioPlaying(false); // Will be set true when actually playing
+      setIsAudioPlaying(false);
 
-      // Configure audio mode for playback
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
         playsInSilentModeIOS: true,
       });
 
-      // Unload previous sound if exists
       if (soundRef.current) {
         await soundRef.current.unloadAsync();
       }
 
-      // Create and play sound
+      // expo-av supports data URIs for in-memory audio on iOS
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: `data:audio/mpeg;base64,${base64}` },
+        { shouldPlay: true },
+        onPlaybackStatusUpdate
+      );
+
+      soundRef.current = sound;
+    } catch (err) {
+      console.error('Error playing audio:', err);
+      setIsAudioPlaying(false);
+      setVoiceState('idle');
+    }
+  }, [onPlaybackStatusUpdate]);
+
+  // Keep URL-based playback for replaying messages from history
+  const playAudio = useCallback(async (audioUrl: string) => {
+    try {
+      setVoiceState('speaking');
+      setIsAudioPlaying(false);
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+      });
+
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync();
+      }
+
       const { sound } = await Audio.Sound.createAsync(
         { uri: audioUrl },
         { shouldPlay: true },
@@ -320,6 +390,9 @@ export function useVoice({
     if (recordingInterval.current) {
       clearInterval(recordingInterval.current);
     }
+    if (fillerTimerRef.current) {
+      clearTimeout(fillerTimerRef.current);
+    }
     warnedTwelve.current = false;
     warnedFive.current = false;
     if (recordingRef.current) {
@@ -330,6 +403,11 @@ export function useVoice({
     if (soundRef.current) {
       try {
         await soundRef.current.unloadAsync();
+      } catch {}
+    }
+    if (fillerSoundRef.current) {
+      try {
+        await fillerSoundRef.current.unloadAsync();
       } catch {}
     }
   }, []);

@@ -33,14 +33,15 @@ export default function MainScreen() {
   );
 
   const handleResponse = useCallback(
-    (response: string, audioUrl: string) => {
-      addAssistantMessage(response, audioUrl);
+    (response: string, audioUrl: string | null) => {
+      addAssistantMessage(response, audioUrl ?? undefined);
     },
     [addAssistantMessage]
   );
 
   const {
     voiceState,
+    isAudioPlaying,
     error,
     startRecording,
     stopRecording,
@@ -68,12 +69,12 @@ export default function MainScreen() {
       .join('\n\n');
     try {
       await Share.share({ message: transcript });
-    } catch (error) {}
+    } catch {}
   }, [messages]);
 
   return (
     <SafeAreaView style={styles.container}>
-      <AuroraBackground voiceState={voiceState} />
+      <AuroraBackground voiceState={voiceState} isAudioPlaying={isAudioPlaying} />
       <RecordingWarningOverlay remainingMs={recordingRemainingMs} />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Sophie</Text>
