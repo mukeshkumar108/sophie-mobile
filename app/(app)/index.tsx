@@ -18,11 +18,13 @@ import { TranscriptModal } from '@/components/transcript-modal';
 import { AuroraBackground } from '@/components/aurora-background';
 import { RecordingWarningOverlay } from '@/components/recording-warning-overlay';
 import { closeSession } from '@/services/api';
+import * as Haptics from 'expo-haptics';
 
 export default function MainScreen() {
   const router = useRouter();
   const { getToken, signOut } = useAuth();
   const [isTranscriptVisible, setIsTranscriptVisible] = useState(false);
+  const [endSessionState, setEndSessionState] = useState<'idle' | 'loading' | 'done'>('idle');
   const { messages, addUserMessage, addAssistantMessage, clearMessages } =
     useConversationContext();
 
@@ -60,14 +62,21 @@ export default function MainScreen() {
   };
 
   const handleEndSession = useCallback(async () => {
+    if (endSessionState !== 'idle') return;
+    setEndSessionState('loading');
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const token = await getToken();
       if (token) await closeSession(token);
       clearMessages();
+      setEndSessionState('done');
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setTimeout(() => setEndSessionState('idle'), 1500);
     } catch (err) {
       console.warn('[end-session] failed', err);
+      setEndSessionState('idle');
     }
-  }, [getToken, clearMessages]);
+  }, [getToken, clearMessages, endSessionState]);
 
   const handlePressOut = useCallback(() => {
     stopRecording();
@@ -104,8 +113,17 @@ export default function MainScreen() {
           onPressOut={handlePressOut}
         />
         <View style={styles.footerLinks}>
-          <Pressable onPress={handleEndSession} style={styles.footerLinkButton}>
-            <Text style={styles.footerLinkText}>End session</Text>
+          <Pressable
+            onPress={handleEndSession}
+            disabled={endSessionState !== 'idle'}
+            style={styles.footerLinkButton}
+          >
+            <Text style={[
+              styles.footerLinkText,
+              endSessionState === 'done' && styles.footerLinkTextDone,
+            ]}>
+              {endSessionState === 'loading' ? 'Ending...' : endSessionState === 'done' ? 'Done' : 'End session'}
+            </Text>
           </Pressable>
           <Pressable onPress={() => router.push('/(app)/settings')} style={styles.footerLinkButton}>
             <Text style={styles.footerLinkText}>Settings</Text>
@@ -182,5 +200,8 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: 13,
     letterSpacing: 0.3,
+  },
+  footerLinkTextDone: {
+    color: Colors.text,
   },
 });
